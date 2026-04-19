@@ -1,0 +1,21 @@
+{
+  "name": "@autoflow/sdk",
+  "version": "0.1.0",
+  "description": "Official JavaScript/TypeScript SDK for AutoFlow AI",
+  "main": "src/index.js",
+  "types": "types/index.d.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "autoflow",
+    "automation",
+    "ai",
+    "workflow"
+  ],
+  "author": "AutoFlow AI Team",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.0"
+  }
+}

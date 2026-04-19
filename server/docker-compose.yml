@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    env_file: .env.production
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/autoflow?schema=public
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - autoflow_network
+
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      - POSTGRES_DB=autoflow
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - autoflow_network
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - autoflow_network
+
+  nginx:
+    image: nginx:alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    depends_on:
+      - app
+    networks:
+      - autoflow_network
+
+networks:
+  autoflow_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:

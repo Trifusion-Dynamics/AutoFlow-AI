@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+dist/
+.npm/
+
+# Environment
+.env
+.env.test
+.env.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# IDE/OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Project-specific
+uploads/
+scratch/
+temp/

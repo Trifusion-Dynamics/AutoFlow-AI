@@ -1,0 +1,516 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  plan        String   @default("free") // free|starter|pro|enterprise
+  tokenQuota  Int      @default(100000)
+  tokenUsed   Int      @default(0)
+  settings    Json     @default("{}")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  users             User[]
+  workflows         Workflow[]
+  executions        Execution[]
+  apiKeys           ApiKey[]
+  auditLogs         AuditLog[]
+  toolConfigs       ToolConfig[]
+  outboundWebhooks  OutboundWebhook[]
+  subscription      OrgSubscription?
+  invoices          OrgInvoice[]
+  invitations       TeamInvitation[]
+  notifications     Notification[]
+  onboardingProgress OnboardingProgress?
+  uploadedFiles     UploadedFile[]
+
+  @@map("organizations")
+}
+
+// ... existing models ...
+
+model BillingPlan {
+  id                String   @id @default(uuid())
+  name              String   @unique // free|starter|pro|enterprise
+  displayName       String
+  price             Float
+  billingCycle      String   @default("monthly") // monthly|yearly
+  tokenQuota        Int
+  workflowLimit     Int
+  executionLimit    Int      // per month
+  apiCallLimit      Int      // per month
+  teamMembersLimit  Int
+  features          Json     @default("[]") // array of feature flags
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  subscriptions     OrgSubscription[]
+
+  @@map("billing_plans")
+}
+
+model OrgSubscription {
+  id                     String    @id @default(uuid())
+  orgId                  String    @unique
+  planId                 String
+  status                 String    @default("active") // active|cancelled|past_due|trialing
+  currentPeriodStart     DateTime  @default(now())
+  currentPeriodEnd       DateTime
+  cancelAtPeriodEnd      Boolean   @default(false)
+  trialEndsAt            DateTime?
+  externalSubscriptionId String?   // Stripe ID
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  // Relations
+  org  Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  plan BillingPlan  @relation(fields: [planId], references: [id])
+
+  @@map("org_subscriptions")
+}
+
+model OrgInvoice {
+  id             String    @id @default(uuid())
+  orgId          String
+  subscriptionId String
+  amount         Float
+  currency       String    @default("USD")
+  status         String    @default("draft") // draft|open|paid|void
+  periodStart    DateTime
+  periodEnd      DateTime
+  paidAt         DateTime?
+  items          Json      @default("[]") // line items array
+  createdAt      DateTime  @default(now())
+
+  // Relations
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+  @@map("org_invoices")
+}
+
+model TeamInvitation {
+  id          String    @id @default(uuid())
+  orgId       String
+  invitedBy   String
+  email       String
+  role        String    @default("member")
+  token       String    @unique
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  status      String    @default("pending") // pending|accepted|expired|cancelled
+  createdAt   DateTime  @default(now())
+
+  // Relations
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+  @@index([email])
+  @@map("team_invitations")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  orgId     String
+  userId    String?  // null = org-wide
+  type      String
+  title     String
+  message   String
+  data      Json     @default("{}")
+  isRead    Boolean  @default(false)
+  readAt    DateTime?
+  channel   String   @default("both") // in_app|email|both
+  createdAt DateTime @default(now())
+
+  // Relations
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead, createdAt(sort: Desc)])
+  @@index([orgId, createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+
+model User {
+  id           String    @id @default(uuid())
+  orgId        String
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         String    @default("member") // owner|admin|member|viewer
+  isSystemAdmin Boolean   @default(false)
+  isVerified   Boolean   @default(false)
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
+  org          Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  refreshTokens RefreshToken[]
+  workflows    Workflow[]
+  apiKeys      ApiKey[]
+  auditLogs    AuditLog[]
+  uploadedFiles UploadedFile[]
+
+  @@index([orgId])
+  @@index([email])
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  isRevoked Boolean   @default(false)
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime  @default(now())
+
+  // Relations
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model Workflow {
+  id                String    @id @default(uuid())
+  orgId             String
+  createdBy         String
+  name              String
+  description       String?
+  status            String    @default("draft") // draft|active|paused|archived
+  triggerType       String    // webhook|cron|manual
+  triggerConfig     Json      @default("{}")
+  steps             Json      @default("[]")
+  agentInstruction String?
+  variables         Json      @default("{}")
+  timeoutSeconds    Int       @default(300)
+  maxRetries        Int       @default(3)
+  webhookSecret     String?
+  lastRunAt         DateTime?
+  runCount          Int       @default(0)
+  successCount      Int       @default(0)
+  failCount         Int       @default(0)
+  aiModel          String    @default("claude") // claude|gpt-4o|gemini
+  aiConfig         Json      @default("{}")     // { temperature, maxTokens, systemPrompt }
+  currentVersion   Int       @default(1)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relations
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  creator   User          @relation(fields: [createdBy], references: [id])
+  executions Execution[]
+  versions   WorkflowVersion[]
+
+  @@index([orgId])
+  @@index([orgId, status])
+  @@index([status])
+  @@index([triggerType])
+  @@map("workflows")
+}
+
+model Execution {
+  id           String    @id @default(uuid())
+  workflowId   String
+  orgId        String
+  triggeredBy  String    // webhook|cron|manual|user
+  triggerData  Json      @default("{}")
+  status       String    @default("pending") // pending|running|success|failed|timeout
+  startedAt    DateTime?
+  completedAt  DateTime?
+  durationMs   Int?
+  tokensUsed   Int       @default(0)
+  errorMessage String?
+  output       Json      @default("{}")
+  retryCount   Int       @default(0)
+  createdAt    DateTime  @default(now())
+
+  // Relations
+  workflow     Workflow       @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  org          Organization   @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  steps        ExecutionStep[]
+  agentMessages AgentMessage[]
+
+  @@index([workflowId])
+  @@index([orgId])
+  @@index([orgId, status, createdAt(sort: Desc)])
+  @@index([orgId, createdAt(sort: Desc)])
+  @@index([workflowId, createdAt(sort: Desc)])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@map("executions")
+}
+
+model ExecutionStep {
+  id          String    @id @default(uuid())
+  executionId String
+  stepId      String
+  stepName    String?
+  toolName    String?
+  status      String    @default("pending") // pending|running|success|failed|skipped
+  input       Json      @default("{}")
+  output      Json      @default("{}")
+  error       String?
+  startedAt   DateTime?
+  completedAt DateTime?
+  durationMs  Int?
+  createdAt   DateTime  @default(now())
+
+  // Relations
+  execution   Execution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+
+  @@index([executionId])
+  @@map("execution_steps")
+}
+
+model AgentMessage {
+  id         String    @id @default(uuid())
+  executionId String
+  role       String    // system|user|assistant|tool
+  content    String
+  toolName   String?
+  toolInput  Json?
+  toolOutput Json?
+  tokensIn   Int       @default(0)
+  tokensOut  Int       @default(0)
+  sequence   Int
+  createdAt  DateTime  @default(now())
+
+  // Relations
+  execution  Execution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+
+  @@index([executionId, sequence])
+  @@map("agent_messages")
+}
+
+model ApiKey {
+  id         String    @id @default(uuid())
+  orgId      String
+  createdBy  String
+  name       String
+  keyHash    String    @unique
+  keyPrefix  String
+  permissions Json     @default("[\"read\",\"write\"]")
+  lastUsedAt DateTime?
+  expiresAt  DateTime?
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+
+  // Relations
+  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  creator    User          @relation(fields: [createdBy], references: [id])
+
+  @@map("api_keys")
+}
+
+model AuditLog {
+  id           String    @id @default(uuid())
+  orgId        String?
+  userId       String?
+  action       String    // workflow.created|user.login|workflow.deleted etc.
+  resourceType String?
+  resourceId   String?
+  oldValue     Json?
+  newValue     Json?
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime  @default(now())
+
+  // Relations
+  org          Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
+  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([orgId, action, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("audit_logs")
+}
+
+model ToolConfig {
+  id        String   @id @default(uuid())
+  orgId     String
+  toolName  String   // gmail|slack|notion|etc
+  config    Json     // encrypted credentials
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, toolName])
+  @@map("tool_configs")
+}
+
+model OutboundWebhook {
+  id             String    @id @default(uuid())
+  orgId          String
+  name           String
+  url            String
+  secret         String
+  events         Json      // ["execution.completed", "execution.failed", ...]
+  isActive       Boolean   @default(true)
+  failureCount   Int       @default(0)
+  lastCalledAt   DateTime?
+  lastStatusCode Int?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relations
+  org        Organization             @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  deliveries OutboundWebhookDelivery[]
+
+  @@index([orgId])
+  @@map("outbound_webhooks")
+}
+
+model OutboundWebhookDelivery {
+  id           String    @id @default(uuid())
+  webhookId    String
+  event        String
+  payload      Json
+  statusCode   Int?
+  responseBody String?
+  duration     Int?
+  success      Boolean
+  attemptCount Int       @default(1)
+  nextRetryAt  DateTime?
+  createdAt    DateTime  @default(now())
+
+  // Relations
+  webhook OutboundWebhook @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  @@index([webhookId])
+  @@index([webhookId, createdAt(sort: Desc)])
+  @@map("outbound_webhook_deliveries")
+}
+
+model WorkflowTemplate {
+  id               String   @id @default(uuid())
+  name             String
+  description      String
+  category         String   // lead-management|email-automation|notifications|data-processing|reporting|customer-support
+  tags             Json     @default("[]") // string array
+  triggerType      String   // webhook|cron|manual
+  steps            Json     @default("[]") // same as workflow steps
+  agentInstruction String?
+  variables        Json      @default("[]") // variable definitions with descriptions
+  previewImageUrl  String?
+  usageCount       Int      @default(0)
+  isPublic         Boolean  @default(true)
+  
+  publishedBy      String?   // Organization ID
+  publishedAt      DateTime?
+  reviewStatus     String?   // pending|approved|rejected
+  downloadCount    Int       @default(0)
+  rating           Float?
+  ratingCount      Int       @default(0)
+
+  createdBy        String?  // null = system template
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([category])
+  @@index([isPublic])
+  @@map("workflow_templates")
+}
+
+model OnboardingProgress {
+  id             String    @id @default(uuid())
+  orgId          String    @unique
+  completedSteps Json      @default("[]") // array of strings
+  currentStep    String?
+  completedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relations
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@map("onboarding_progress")
+}
+
+model UploadedFile {
+  id          String   @id @default(uuid())
+  orgId       String
+  uploadedBy  String
+  name        String
+  url         String
+  size        Int
+  mimeType    String
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  uploader  User         @relation(fields: [uploadedBy], references: [id])
+
+  @@index([orgId])
+  @@map("uploaded_files")
+}
+
+model WorkflowVersion {
+  id               String   @id @default(uuid())
+  workflowId       String
+  orgId            String
+  version          Int
+  name             String
+  steps            Json
+  agentInstruction String?
+  triggerType      String
+  triggerConfig    Json
+  variables        Json
+  changedBy        String
+  changeNote       String?
+  createdAt        DateTime @default(now())
+
+  workflow Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@unique([workflowId, version])
+  @@index([workflowId])
+  @@map("workflow_versions")
+}
+
+model DataExportJob {
+  id          String    @id @default(uuid())
+  orgId       String
+  requestedBy String
+  status      String    // processing|completed|failed
+  format      String    // json|csv
+  fileUrl     String?
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  @@map("data_export_jobs")
+}
+
+model ConsentRecord {
+  id          String    @id @default(uuid())
+  orgId       String
+  userId      String
+  consentType String
+  granted     Boolean
+  grantedAt   DateTime  @default(now())
+  revokedAt   DateTime?
+  ipAddress   String?
+
+  @@map("consent_records")
+}
+
+
