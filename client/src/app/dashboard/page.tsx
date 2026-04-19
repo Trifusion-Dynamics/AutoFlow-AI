@@ -1,274 +1,220 @@
 "use client";
 
-import { useEffect } from "react";
+import { useState } from "react";
 import { 
   Zap, 
-  Activity, 
-  Box, 
+  Play, 
+  GitBranch, 
+  Plus, 
   ArrowUpRight, 
-  ArrowDownRight, 
-  Clock,
-  Plus,
-  Play,
-  ArrowRight,
-  ShieldCheck,
-  LayoutGrid,
-  Bot,
-  Loader2
+  Clock, 
+  CheckCircle2,
+  AlertCircle,
+  Activity,
+  ArrowRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  AreaChart,
-  Area
-} from "recharts";
-import { useAuthStore } from "@/lib/store/authStore";
-import { useExecutionStats } from "@/lib/api/hooks/executionHooks";
-import { Skeleton } from "@/components/ui/skeleton";
+  Card, 
+  CardContent, 
+  CardHeader, 
+  CardTitle, 
+  CardDescription 
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { useAuthStore } from "@/lib/store/authStore";
 
-export default function DashboardPage() {
-  const { user, org, fetchMe, isLoading: isAuthLoading } = useAuthStore();
-  const { data: stats, isLoading: isStatsLoading } = useExecutionStats();
-
-  useEffect(() => {
-    fetchMe();
-  }, [fetchMe]);
-
-  if (isAuthLoading) {
-    return (
-      <div className="h-[80vh] flex flex-col items-center justify-center space-y-6">
-        <Loader2 className="w-12 h-12 text-primary animate-spin" />
-        <div className="text-center space-y-2">
-          <h2 className="text-xl font-black uppercase tracking-widest">Waking up the Engine</h2>
-          <p className="text-muted-foreground text-sm">Authenticating your session with AutoFlow AI...</p>
-        </div>
-      </div>
-    );
-  }
+export default function DashboardOverview() {
+  const { user, org } = useAuthStore();
 
   return (
     <div className="space-y-10 pb-10">
-      {/* Welcome Section */}
-      <section className="relative overflow-hidden rounded-[2.5rem] bg-primary p-8 md:p-12 text-white shadow-2xl shadow-primary/20">
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
-          <div className="space-y-4 max-w-2xl">
-            <h1 className="text-4xl md:text-5xl font-black tracking-tight">
-               Welcome back, {user?.name?.split(' ')[0] || "Developer"}!
+      {/* Welcome Hero */}
+      <div className="relative overflow-hidden p-10 rounded-[3rem] bg-foreground text-background shadow-2xl group">
+         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 blur-[100px] -z-10 group-hover:scale-150 transition-transform duration-1000" />
+         <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-primary/10 blur-[80px] -z-10" />
+         
+         <div className="max-w-2xl space-y-6 relative">
+            <Badge className="bg-primary text-white border-none font-black italic tracking-widest px-4 py-1">
+               WORKSPACE v2.4
+            </Badge>
+            <h1 className="text-4xl md:text-5xl font-black tracking-tighter leading-none italic">
+               WELCOME BACK, <br />
+               <span className="text-primary uppercase">{user?.name?.split(' ')[0]}</span>
             </h1>
-            <p className="text-primary-foreground/80 text-lg leading-relaxed font-medium">
-              Your organization **{org?.name || "AutoFlow AI"}** has processed {stats?.totalExecutions || 0} workflows this month.
-              You're currently using **{org?.tokenUsed || 0} / {org?.tokenQuota || 100000}** tokens.
+            <p className="text-zinc-400 font-medium leading-relaxed">
+               Your autonomous AI engine is running in <span className="text-white">DYNAMIC_BURST</span> mode. 24 active nodes are currently processing live telemetry.
             </p>
             <div className="flex flex-wrap gap-4 pt-4">
-              <Link href="/dashboard/workflows/new">
-                <Button className="bg-white text-primary hover:bg-white/90 font-black h-12 px-8 rounded-xl shadow-lg">
-                  <Plus className="w-5 h-5 mr-2" /> CREATE WORKFLOW
-                </Button>
-              </Link>
-              <Button variant="ghost" className="text-white hover:bg-white/10 font-bold h-12 px-8 rounded-xl border border-white/20">
-                VIEW DOCUMENTATION
-              </Button>
+               <Link href="/dashboard/workflows/new">
+                  <Button className="h-14 px-10 rounded-2xl bg-primary text-white hover:bg-primary/90 font-black italic tracking-widest shadow-xl shadow-primary/20">
+                     INITIALIZE WORKFLOW
+                  </Button>
+               </Link>
+               <Button variant="outline" className="h-14 px-8 rounded-2xl border-white/10 bg-white/5 hover:bg-white/10 font-bold gap-3">
+                  <Zap className="w-5 h-5" />
+                  View Quickstart
+               </Button>
             </div>
-          </div>
-          <div className="hidden lg:block w-48 h-48 bg-white/10 rounded-full blur-3xl absolute -top-10 -right-10" />
-          <motion.div 
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="hidden md:flex flex-col items-center justify-center w-64 h-64 bg-white/10 backdrop-blur-md rounded-3xl border border-white/20"
-          >
-            <div className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-2">Platform Status</div>
-            <div className="w-12 h-12 rounded-full border-4 border-white/30 border-t-white animate-spin mb-4" />
-            <div className="font-mono text-xl font-black tracking-tighter">ALL SYSTEMS GO</div>
-          </motion.div>
-        </div>
-      </section>
+         </div>
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard 
-          title="Total Workflows" 
-          value={org?.activeWorkflows || 0} 
-          change="+12%" 
-          trend="up" 
-          icon={Zap} 
-          loading={isStatsLoading}
-        />
-        <StatCard 
-          title="Executions (24h)" 
-          value={stats?.dailyExecutions || 0} 
-          change="+1.5%" 
-          trend="up" 
-          icon={Activity} 
-          loading={isStatsLoading}
-        />
-        <StatCard 
-          title="Success Rate" 
-          value={`${stats?.successRate || 99.8}%`} 
-          change="-0.2%" 
-          trend="down" 
-          icon={ShieldCheck} 
-          loading={isStatsLoading}
-        />
-        <StatCard 
-          title="Avg. Latency" 
-          value={`${stats?.avgLatency || 142}ms`} 
-          change="-18ms" 
-          trend="up" 
-          icon={Clock} 
-          loading={isStatsLoading}
-        />
+         {/* Stats overlay */}
+         <div className="hidden lg:flex absolute right-12 top-1/2 -translate-y-1/2 gap-8">
+            <div className="text-center group">
+               <div className="text-5xl font-black text-primary italic tracking-tighter">98.2<span className="text-xs uppercase ml-1">%</span></div>
+               <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mt-2">Uptime</div>
+            </div>
+            <div className="text-center">
+               <div className="text-5xl font-black text-white italic tracking-tighter">12<span className="text-xs uppercase ml-1">ms</span></div>
+               <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mt-2">Latency</div>
+            </div>
+         </div>
       </div>
 
-      {/* Main Grid: Charts & Activity */}
+      {/* Getting Started Guide */}
+      <div className="grid md:grid-cols-3 gap-8">
+         <Card className="glass border-none rounded-[2.5rem] shadow-xl hover:shadow-2xl transition-all group overflow-hidden">
+            <CardContent className="p-8 space-y-4">
+               <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                  <GitBranch className="w-6 h-6" />
+               </div>
+               <div className="space-y-1">
+                  <h3 className="font-black text-lg">Create Logic</h3>
+                  <p className="text-xs text-muted-foreground font-medium leading-relaxed italic">Design your first autonomous flow using our drag-and-drop canvas or SDK.</p>
+               </div>
+               <Button variant="link" className="p-0 h-auto text-primary font-black uppercase text-[10px] tracking-widest items-center">
+                  Get Started <ArrowRight className="ml-2 w-3 h-3" />
+               </Button>
+            </CardContent>
+         </Card>
+
+         <Card className="glass border-none rounded-[2.5rem] shadow-xl hover:shadow-2xl transition-all group overflow-hidden border-b-4 border-primary/20">
+            <CardContent className="p-8 space-y-4">
+               <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-500 group-hover:scale-110 transition-transform">
+                  <Activity className="w-6 h-6" />
+               </div>
+               <div className="space-y-1">
+                  <h3 className="font-black text-lg">Establish Sockets</h3>
+                  <p className="text-xs text-muted-foreground font-medium leading-relaxed italic">Connect your production environment to receive real-time execution streams.</p>
+               </div>
+               <Button variant="link" className="p-0 h-auto text-blue-500 font-black uppercase text-[10px] tracking-widest items-center">
+                  Configure SDK <ArrowRight className="ml-2 w-3 h-3" />
+               </Button>
+            </CardContent>
+         </Card>
+
+         <Card className="glass border-none rounded-[2.5rem] shadow-xl hover:shadow-2xl transition-all group overflow-hidden">
+            <CardContent className="p-8 space-y-4">
+               <div className="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center text-orange-500 group-hover:scale-110 transition-transform">
+                  <CheckCircle2 className="w-6 h-6" />
+               </div>
+               <div className="space-y-1">
+                  <h3 className="font-black text-lg">Scale Globally</h3>
+                  <p className="text-xs text-muted-foreground font-medium leading-relaxed italic">Distribute your workflows across multiple cloud providers with zero latency.</p>
+               </div>
+               <Button variant="link" className="p-0 h-auto text-orange-500 font-black uppercase text-[10px] tracking-widest items-center">
+                  Upgrade Plan <ArrowRight className="ml-2 w-3 h-3" />
+               </Button>
+            </CardContent>
+         </Card>
+      </div>
+
       <div className="grid lg:grid-cols-3 gap-8">
-        {/* Usage Analytics */}
-        <Card className="lg:col-span-2 glass border-none rounded-[2rem] overflow-hidden shadow-xl shadow-muted/20">
-          <CardHeader className="p-8 pb-0">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-xl font-bold">Execution Trends</CardTitle>
-                <CardDescription>Visualizing your workflow volume over the last 30 days.</CardDescription>
-              </div>
-              <div className="flex gap-2">
-                 <Badge variant="outline" className="border-none bg-primary/10 text-primary font-bold">Monthly</Badge>
-                 <Badge variant="ghost" className="font-bold opacity-40">Weekly</Badge>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-8 pt-10">
-             <div className="h-[350px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={stats?.trends || mockHistory}>
-                    <defs>
-                      <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "rgba(255,255,255,0.3)" }} dy={10} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "rgba(255,255,255,0.3)" }} />
-                    <Tooltip 
-                      contentStyle={{ backgroundColor: "#0f172a", border: "none", borderRadius: "12px", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)" }}
-                      itemStyle={{ color: "#3b82f6", fontWeight: "bold" }}
-                    />
-                    <Area type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" />
-                  </AreaChart>
-                </ResponsiveContainer>
-             </div>
-          </CardContent>
-        </Card>
+         {/* Recent Activity */}
+         <Card className="lg:col-span-2 glass border-none rounded-[2.5rem] shadow-xl overflow-hidden">
+            <CardHeader className="p-10 pb-6 border-b border-white/5">
+               <div className="flex items-center justify-between">
+                  <CardTitle className="text-xl font-black italic">Recent Executions</CardTitle>
+                  <Link href="/dashboard/executions">
+                     <Button variant="ghost" size="sm" className="font-black uppercase text-[10px] tracking-widest text-muted-foreground">View All</Button>
+                  </Link>
+               </div>
+            </CardHeader>
+            <CardContent className="p-0">
+               <div className="divide-y divide-white/5">
+                  {[
+                     { id: 'ex_124', name: 'Lead Extraction Agent', status: 'Success', time: '2m ago', duration: '1.2s' },
+                     { id: 'ex_123', name: 'Slack Summary Cycle', status: 'Success', time: '15m ago', duration: '0.8s' },
+                     { id: 'ex_122', name: 'Zendesk Routing Agent', status: 'In-Progress', time: 'Just now', duration: '-' },
+                     { id: 'ex_121', name: 'Github PR Auditor', status: 'Failed', time: '1h ago', duration: '4.5s' },
+                  ].map((ex) => (
+                     <div key={ex.id} className="p-6 px-10 flex items-center justify-between hover:bg-white/2 transition-colors group">
+                        <div className="flex items-center gap-6">
+                           <div className={cn(
+                              "w-10 h-10 rounded-xl flex items-center justify-center",
+                              ex.status === 'Success' ? "bg-green-500/10 text-green-500" :
+                              ex.status === 'In-Progress' ? "bg-primary/10 text-primary animate-pulse" :
+                              "bg-red-500/10 text-red-500"
+                           )}>
+                              {ex.status === 'Success' ? <CheckCircle2 className="w-5 h-5" /> :
+                               ex.status === 'In-Progress' ? <Play className="w-5 h-5" /> :
+                               <AlertCircle className="w-5 h-5" />
+                              }
+                           </div>
+                           <div>
+                              <div className="font-bold text-sm tracking-tight group-hover:text-primary transition-colors">{ex.name}</div>
+                              <div className="text-[10px] font-black uppercase tracking-widest opacity-30">{ex.id} • {ex.time}</div>
+                           </div>
+                        </div>
+                        <div className="text-right">
+                           <div className="font-mono text-xs font-bold opacity-60">{ex.duration}</div>
+                           <Badge variant="outline" className={cn(
+                              "h-5 text-[8px] font-black border-none px-2",
+                              ex.status === 'Success' ? "bg-green-500/10 text-green-500" :
+                              ex.status === 'In-Progress' ? "bg-primary/10 text-primary" :
+                              "bg-red-500/10 text-red-500"
+                           )}>{ex.status.toUpperCase()}</Badge>
+                        </div>
+                     </div>
+                  ))}
+               </div>
+            </CardContent>
+         </Card>
 
-        {/* Quick Actions & Recent */}
-        <div className="space-y-6">
-           <Card className="glass border-none rounded-[2rem] shadow-xl shadow-muted/20 overflow-hidden">
-             <CardHeader className="p-6">
-                <CardTitle className="text-sm font-black uppercase tracking-widest text-muted-foreground">Quick Setup</CardTitle>
+         {/* Usage Pulse */}
+         <Card className="glass border-none rounded-[2.5rem] shadow-xl overflow-hidden">
+             <CardHeader className="p-10">
+                <CardTitle className="text-sm font-black uppercase tracking-[0.2em] opacity-30">Consumption</CardTitle>
              </CardHeader>
-             <CardContent className="px-6 pb-6 space-y-3">
-                <OnboardingItem 
-                  title="Generate API Key" 
-                  desc="Required to connect your SDK" 
-                  done={false} 
-                  link="/dashboard/api-keys" 
-                />
-                <OnboardingItem 
-                  title="Invite Team Member" 
-                  desc="Collaborate on workflows" 
-                  done={true} 
-                  link="/dashboard/team" 
-                />
-                <OnboardingItem 
-                  title="Connect Integration" 
-                  desc="Sync with Slack or Github" 
-                  done={false} 
-                  link="/dashboard/settings" 
-                />
-             </CardContent>
-           </Card>
+             <CardContent className="px-10 pb-10 space-y-8">
+                <div className="space-y-4">
+                   <div className="flex justify-between items-end">
+                      <div className="text-4xl font-black italic tracking-tighter">64.2%</div>
+                      <div className="text-[10px] font-black uppercase opacity-30">Monthly Quota</div>
+                   </div>
+                   <div className="h-3 w-full bg-white/5 rounded-full overflow-hidden">
+                      <div className="h-full bg-primary shadow-[0_0_20px_rgba(var(--primary),0.5)] transition-all duration-1000" style={{ width: '64.2%' }} />
+                   </div>
+                </div>
 
-           <Card className="glass border-none rounded-[2rem] shadow-xl shadow-muted/20 p-6 bg-primary/5">
-              <h4 className="font-bold flex items-center justify-between mb-4">
-                 Recent Activity
-                 <Button variant="ghost" size="sm" className="text-[10px] uppercase font-black opacity-40">View All</Button>
-              </h4>
-              <div className="space-y-4">
-                 {[1,2,3].map(i => (
-                    <div key={i} className="flex items-center gap-3">
-                       <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center">
-                          <Play className="w-3 h-3 text-primary" />
-                       </div>
-                       <div className="flex-1">
-                          <div className="text-xs font-bold leading-none">Customer Onboarding Run</div>
-                          <div className="text-[10px] text-muted-foreground mt-1">2 minutes ago &bull; Success</div>
-                       </div>
-                    </div>
-                 ))}
-              </div>
-           </Card>
-        </div>
+                <div className="space-y-6 pt-6 divide-y divide-white/5">
+                   <div className="flex justify-between py-2">
+                      <span className="text-[10px] font-black uppercase opacity-30 tracking-widest">Active Flows</span>
+                      <span className="text-xs font-black italic">14 / 20</span>
+                   </div>
+                   <div className="flex justify-between py-2">
+                      <span className="text-[10px] font-black uppercase opacity-30 tracking-widest">API Calls</span>
+                      <span className="text-xs font-black italic">24,582</span>
+                   </div>
+                   <div className="flex justify-between py-2">
+                      <span className="text-[10px] font-black uppercase opacity-30 tracking-widest">Execution Hours</span>
+                      <span className="text-xs font-black italic">12.4h</span>
+                   </div>
+                </div>
+
+                <Link href="/dashboard/billing">
+                  <Button variant="ghost" className="w-full h-12 rounded-2xl border border-white/5 hover:bg-white/5 font-black uppercase text-[10px] tracking-widest">
+                     Manage Subscription
+                  </Button>
+                </Link>
+             </CardContent>
+         </Card>
       </div>
     </div>
   );
 }
 
-function StatCard({ title, value, change, trend, icon: Icon, loading }: any) {
-  return (
-    <Card className="glass border-none rounded-3xl shadow-xl shadow-muted/10 overflow-hidden group hover:bg-muted/10 transition-colors">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between mb-4">
-           <div className="w-10 h-10 rounded-xl bg-muted/40 flex items-center justify-center text-muted-foreground group-hover:text-primary transition-colors">
-              <Icon className="w-5 h-5" />
-           </div>
-           {loading ? <Skeleton className="h-4 w-12 rounded-full" /> : (
-             <div className={cn(
-              "text-[10px] font-bold px-2 py-1 rounded-full",
-              trend === "up" ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"
-            )}>
-              {change}
-            </div>
-           )}
-        </div>
-        <div>
-          <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">{title}</div>
-          {loading ? <Skeleton className="h-8 w-24" /> : <div className="text-2xl font-black">{value}</div>}
-        </div>
-      </CardContent>
-    </Card>
-  );
+function cn(...classes: any[]) {
+  return classes.filter(Boolean).join(" ");
 }
-
-function OnboardingItem({ title, desc, done, link }: any) {
-  return (
-    <Link href={link}>
-      <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/20 hover:bg-muted/40 transition-colors cursor-pointer group">
-        <div className="space-y-0.5">
-          <div className={cn("text-xs font-bold flex items-center gap-2", done && "text-muted-foreground line-through")}>
-             {title}
-          </div>
-          <div className="text-[10px] text-muted-foreground">{desc}</div>
-        </div>
-        <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors group-hover:translate-x-1" />
-      </div>
-    </Link>
-  );
-}
-
-const mockHistory = [
-  { name: "Mon", value: 30 },
-  { name: "Tue", value: 45 },
-  { name: "Wed", value: 25 },
-  { name: "Thu", value: 65 },
-  { name: "Fri", value: 40 },
-  { name: "Sat", value: 90 },
-  { name: "Sun", value: 120 },
-];

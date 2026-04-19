@@ -32,6 +32,17 @@ const app = express();
 // 1. Foundation: Logging & Tracing
 app.use(requestLogger);
 
+// Root Welcome Route
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'AutoFlow AI Engine API is reachable',
+    version: '1.0.0',
+    documentation: '/docs',
+    api: '/api/v1'
+  });
+});
+
 // 1.1 Error Monitoring & Stability
 import { monitorErrorRate, handleErrorAggregation } from './middlewares/errorRate.middleware.js';
 app.use(monitorErrorRate);
