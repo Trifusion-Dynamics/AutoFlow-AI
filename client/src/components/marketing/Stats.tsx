@@ -1,69 +1,39 @@
-"use client";
+'use client';
 
-import { motion, useInView } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
-
-const stats = [
-  { label: "API Calls Processed", value: 10, suffix: "M+", color: "text-blue-500" },
-  { label: "Workflows Created", value: 50, suffix: "K+", color: "text-purple-500" },
-  { label: "Uptime", value: 99.9, suffix: "%", color: "text-green-500" },
-  { label: "Avg Execution Time", value: 2, suffix: "s", color: "text-orange-500", prefix: "< " },
-];
+import { AnimatedCounter } from "@/components/shared/AnimatedCounter";
+import { useInView } from "react-intersection-observer";
 
 export function Stats() {
+  const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.1 });
+
   return (
-    <section className="py-20 bg-background relative z-10">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-          {stats.map((stat, i) => (
-            <StatCard key={stat.label} stat={stat} index={i} />
+    <div className="py-24 bg-[#05050A] border-y border-white/5 relative overflow-hidden">
+      {/* Background Glows */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[1px] bg-gradient-to-r from-transparent via-brand-500/50 to-transparent" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[300px] bg-brand-500/5 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute inset-0 bg-grid opacity-10 pointer-events-none" />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div ref={ref} className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 text-center items-center justify-center">
+          
+          {[
+            { end: 10, suffix: "M+", label: "Tasks Automated Yearly" },
+            { end: 99.9, suffix: "%", decimals: 1, label: "Platform Uptime" },
+            { end: 120, suffix: "+", label: "Native API Integrations" },
+            { end: 15, suffix: "k+", label: "Developers Onboarded" }
+          ].map((stat, idx) => (
+             <div key={idx} className="space-y-4 group">
+               <div className="text-5xl md:text-6xl font-black text-white tracking-tighter drop-shadow-[0_0_25px_rgba(99,102,241,0.2)] group-hover:drop-shadow-[0_0_35px_rgba(99,102,241,0.5)] transition-all">
+                 {inView ? <AnimatedCounter end={stat.end} decimals={stat.decimals} suffix={stat.suffix} /> : "0"}
+               </div>
+               <div className="text-xs font-black text-brand-400 uppercase tracking-widest opacity-80 group-hover:opacity-100 transition-opacity">
+                 {stat.label}
+               </div>
+             </div>
           ))}
+
         </div>
       </div>
-    </section>
-  );
-}
-
-function StatCard({ stat, index }: { stat: typeof stats[0]; index: number }) {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    if (isInView) {
-      let start = 0;
-      const end = stat.value;
-      const duration = 2000;
-      const increment = end / (duration / 16);
-      
-      const timer = setInterval(() => {
-        start += increment;
-        if (start >= end) {
-          setCount(end);
-          clearInterval(timer);
-        } else {
-          setCount(start);
-        }
-      }, 16);
-      
-      return () => clearInterval(timer);
-    }
-  }, [isInView, stat.value]);
-
-  return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, y: 20 }}
-      animate={isInView ? { opacity: 1, y: 0 } : {}}
-      transition={{ delay: index * 0.1 }}
-      className="text-center p-8 rounded-3xl glass transition-transform hover:-translate-y-2"
-    >
-      <div className={`text-4xl lg:text-5xl font-black mb-2 ${stat.color} font-mono tracking-tighter`}>
-        {stat.prefix}{stat.value % 1 === 0 ? Math.floor(count) : count.toFixed(1)}{stat.suffix}
-      </div>
-      <div className="text-sm text-muted-foreground font-medium uppercase tracking-wider">
-        {stat.label}
-      </div>
-    </motion.div>
+    </div>
   );
 }
