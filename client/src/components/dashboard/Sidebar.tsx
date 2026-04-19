@@ -1,135 +1,117 @@
-"use client";
+'use client';
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  Home, 
-  GitBranch, 
-  PlayCircle, 
-  LayoutTemplate, 
-  BarChart2, 
-  Key, 
-  Users, 
-  CreditCard, 
-  Settings,
-  ChevronLeft,
-  ChevronRight,
-  Zap,
-  LogOut
-} from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/lib/store/authStore";
-import { useTheme } from "next-themes";
-import { ThemeToggle } from "../shared/ThemeToggle";
+import { 
+  LayoutDashboard, 
+  Workflow, 
+  Activity, 
+  Key, 
+  Settings, 
+  CreditCard,
+  Zap,
+  Library,
+  Users
+} from "lucide-react";
 
-interface SidebarProps {
-  expanded: boolean;
-  setExpanded: (expanded: boolean) => void;
-}
-
-const navItems = [
-  { name: "Overview", href: "/dashboard", icon: Home },
-  { name: "Workflows", href: "/dashboard/workflows", icon: GitBranch },
-  { name: "Executions", href: "/dashboard/executions", icon: PlayCircle },
-  { name: "Templates", href: "/dashboard/templates", icon: LayoutTemplate },
-  { name: "Analytics", href: "/dashboard/analytics", icon: BarChart2 },
-  { divider: true },
-  { name: "API Keys", href: "/dashboard/api-keys", icon: Key },
-  { name: "Team", href: "/dashboard/team", icon: Users },
-  { name: "Billing", href: "/dashboard/billing", icon: CreditCard },
-  { name: "Settings", href: "/dashboard/settings", icon: Settings },
+const mainNav = [
+  { title: "Overview", href: "/dashboard", icon: LayoutDashboard },
+  { title: "Workflows", href: "/dashboard/workflows", icon: Workflow },
+  { title: "Executions", href: "/dashboard/executions", icon: Activity },
+  { title: "Templates", href: "/dashboard/templates", icon: Library },
 ];
 
-export function Sidebar({ expanded, setExpanded }: SidebarProps) {
+const settingsNav = [
+  { title: "API Keys", href: "/dashboard/keys", icon: Key },
+  { title: "Team", href: "/dashboard/team", icon: Users },
+  { title: "Billing", href: "/dashboard/billing", icon: CreditCard },
+  { title: "Settings", href: "/dashboard/settings", icon: Settings },
+];
+
+export function Sidebar() {
   const pathname = usePathname();
-  const { user, org, logout } = useAuthStore();
+  const { user } = useAuthStore();
 
   return (
-    <aside
-      className={cn(
-        "h-screen flex flex-col bg-surface border-r border-border transition-all duration-300 relative z-30",
-        expanded ? "w-64" : "w-20"
-      )}
-    >
-      {/* Header */}
-      <div className="h-16 flex items-center px-6 gap-3 mb-6">
-        <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
-          <Zap className="text-primary-foreground fill-primary-foreground w-5 h-5" />
-        </div>
-        {expanded && (
-          <span className="font-bold tracking-tight text-lg truncate">AutoFlow AI</span>
-        )}
+    <div className="hidden md:flex flex-col w-64 bg-surface-card border-r border-surface-border h-screen sticky top-0">
+      
+      <div className="h-16 flex items-center px-6 border-b border-surface-border shrink-0">
+        <Link href="/" className="flex items-center gap-2 group">
+          <div className="bg-brand-500 rounded p-1 group-hover:shadow-[0_0_10px_rgba(99,102,241,0.5)] transition-all">
+            <Zap className="h-4 w-4 text-white" />
+          </div>
+          <span className="text-lg font-bold tracking-tight text-foreground truncate">
+            {user?.organization?.name || "AutoFlow AI"}
+          </span>
+        </Link>
       </div>
 
-      {/* Nav Items */}
-      <div className="flex-1 px-3 space-y-1">
-        {navItems.map((item, i) => (
-          item.divider ? (
-            <div key={`div-${i}`} className="py-2">
-              <div className="h-px bg-border/50 mx-3" />
-            </div>
-          ) : (
-            <Link
-              key={item.href!}
-              href={item.href!}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group relative",
-                pathname === item.href 
-                  ? "bg-primary/10 text-primary font-bold" 
-                  : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
-              )}
-            >
-              <item.icon className={cn("w-5 h-5 shrink-0", pathname === item.href && "text-primary")} />
-              {expanded && <span>{item.name}</span>}
-              {!expanded && (
-                <div className="absolute left-14 bg-popover text-popover-foreground px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-border pointer-events-none">
-                  {item.name}
+      <div className="flex-1 py-6 px-3 cursor-default overflow-y-auto">
+        <div className="space-y-1 mb-8">
+          <p className="px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+            Main
+          </p>
+          {mainNav.map((item) => {
+            const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
+            return (
+              <Link key={item.href} href={item.href}>
+                <div
+                  className={cn(
+                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors mb-1",
+                    isActive
+                      ? "bg-brand-500/10 text-brand-400"
+                      : "text-muted-foreground hover:bg-surface-hover hover:text-foreground"
+                  )}
+                >
+                  <item.icon className={cn("h-4 w-4", isActive ? "text-brand-400" : "text-muted-foreground")} />
+                  {item.title}
                 </div>
-              )}
-            </Link>
-          )
-        ))}
+              </Link>
+            );
+          })}
+        </div>
+
+        <div className="space-y-1">
+          <p className="px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+            Settings & Config
+          </p>
+          {settingsNav.map((item) => {
+            const isActive = pathname === item.href || pathname.startsWith(item.href);
+            return (
+              <Link key={item.href} href={item.href}>
+                <div
+                  className={cn(
+                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors mb-1",
+                    isActive
+                      ? "bg-brand-500/10 text-brand-400"
+                      : "text-muted-foreground hover:bg-surface-hover hover:text-foreground"
+                  )}
+                >
+                  <item.icon className={cn("h-4 w-4", isActive ? "text-brand-400" : "text-muted-foreground")} />
+                  {item.title}
+                </div>
+              </Link>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Bottom Actions */}
-      <div className="p-4 bg-muted/30 border-t border-border">
-        {expanded && (
-          <div className="flex items-center gap-3 mb-4 px-2">
-            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary text-xs shrink-0">
-              {user?.name?.[0]}
+      <div className="p-4 border-t border-surface-border mt-auto">
+        <div className="bg-surface-muted rounded-lg p-4 relative overflow-hidden group">
+          <div className="absolute inset-0 bg-brand-500/5 transition-colors group-hover:bg-brand-500/10" />
+          <div className="relative z-10 flex items-center justify-between xl:flex-row flex-col xl:items-start gap-2">
+            <div>
+              <p className="text-sm font-medium text-foreground">Pro Plan</p>
+              <p className="text-xs text-muted-foreground mt-0.5">25k / 100k tokens</p>
             </div>
-            <div className="min-w-0">
-              <div className="text-sm font-bold truncate">{user?.name}</div>
-              <div className="text-[10px] text-muted-foreground truncate uppercase tracking-tighter">
-                {org?.name} • Pro
-              </div>
+            <div className="w-10 h-10 rounded-full border-2 border-brand-500/30 flex items-center justify-center shrink-0">
+              <span className="text-xs font-bold text-brand-400">25%</span>
             </div>
           </div>
-        )}
-        
-        <div className="flex items-center justify-around">
-          <ThemeToggle />
-          {expanded && (
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => logout()}
-              className="text-muted-foreground hover:text-red-500 hover:bg-red-500/10"
-            >
-              <LogOut className="w-5 h-5" />
-            </Button>
-          )}
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => setExpanded(!expanded)}
-            className="text-muted-foreground"
-          >
-            {expanded ? <ChevronLeft /> : <ChevronRight />}
-          </Button>
         </div>
       </div>
-    </aside>
+    </div>
   );
 }
