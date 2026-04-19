@@ -68,6 +68,12 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: true,
             isLoading: false,
           });
+
+          // Sync with legacy localStorage for axios interceptor
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('access_token', accessToken);
+            localStorage.setItem('refresh_token', refreshToken);
+          }
         } catch (error) {
           set({ isLoading: false });
           throw error;
@@ -88,6 +94,12 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: true,
             isLoading: false,
           });
+
+          // Sync with legacy localStorage for axios interceptor
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('access_token', tokens.accessToken);
+            localStorage.setItem('refresh_token', tokens.refreshToken);
+          }
         } catch (error) {
           set({ isLoading: false });
           throw error;
@@ -102,11 +114,16 @@ export const useAuthStore = create<AuthState>()(
           refreshToken: null,
           isAuthenticated: false,
         });
-        localStorage.removeItem("auth-storage");
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem("auth-storage");
+          localStorage.removeItem("access_token");
+          localStorage.removeItem("refresh_token");
+        }
       },
 
       fetchMe: async () => {
-        if (!get().token) return;
+        const token = get().token || (typeof window !== 'undefined' ? localStorage.getItem('access_token') : null);
+        if (!token) return;
         
         set({ isLoading: true });
         try {
@@ -129,9 +146,14 @@ export const useAuthStore = create<AuthState>()(
             user: null, 
             org: null, 
             token: null, 
+            refreshToken: null,
             isAuthenticated: false,
             isLoading: false 
           });
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem("access_token");
+            localStorage.removeItem("refresh_token");
+          }
           throw error;
         }
       },

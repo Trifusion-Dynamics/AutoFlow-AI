@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Zap, 
   Play, 
@@ -11,7 +11,9 @@ import {
   CheckCircle2,
   AlertCircle,
   Activity,
-  ArrowRight
+  ArrowRight,
+  ShieldCheck,
+  Cpu
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
@@ -24,143 +26,129 @@ import {
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { useAuthStore } from "@/lib/store/authStore";
+import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
+import { ModernBackground } from "@/components/ui/modern-background";
 
 export default function DashboardOverview() {
-  const { user, org } = useAuthStore();
+  const { user, org, fetchMe } = useAuthStore();
+
+  useEffect(() => {
+    fetchMe();
+  }, []);
 
   return (
-    <div className="space-y-10 pb-10">
+    <div className="space-y-12 pb-20 relative">
+      <div className="absolute inset-0 -z-10 opacity-10">
+        <ModernBackground />
+      </div>
+
       {/* Welcome Hero */}
-      <div className="relative overflow-hidden p-10 rounded-[3rem] bg-foreground text-background shadow-2xl group">
-         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 blur-[100px] -z-10 group-hover:scale-150 transition-transform duration-1000" />
-         <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-primary/10 blur-[80px] -z-10" />
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative overflow-hidden p-12 rounded-[3.5rem] bg-zinc-950 text-white shadow-2xl group border border-white/5"
+      >
+         <div className="absolute top-0 right-0 w-96 h-96 bg-primary/20 blur-[120px] -z-10 group-hover:scale-125 transition-transform duration-1000" />
+         <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-primary/10 blur-[100px] -z-10" />
          
-         <div className="max-w-2xl space-y-6 relative">
-            <Badge className="bg-primary text-white border-none font-black italic tracking-widest px-4 py-1">
-               WORKSPACE v2.4
+         <div className="max-w-3xl space-y-8 relative">
+            <Badge className="bg-primary/10 text-primary border border-primary/20 font-black italic tracking-[0.3em] px-6 py-2 rounded-full text-[10px]">
+               CORE_ENGINE v2.4_STABLE
             </Badge>
-            <h1 className="text-4xl md:text-5xl font-black tracking-tighter leading-none italic">
-               WELCOME BACK, <br />
-               <span className="text-primary uppercase">{user?.name?.split(' ')[0]}</span>
+            <h1 className="text-5xl md:text-7xl font-black tracking-tighter leading-none italic">
+               SESSION STATUS: <br />
+               <span className="text-primary uppercase glow-text">{user?.name?.split(' ')[0] || 'ENGINEER'}</span>
             </h1>
-            <p className="text-zinc-400 font-medium leading-relaxed">
-               Your autonomous AI engine is running in <span className="text-white">DYNAMIC_BURST</span> mode. 24 active nodes are currently processing live telemetry.
+            <p className="text-white/40 font-medium text-lg leading-relaxed max-w-xl">
+               Your autonomous cognitive infrastructure is operating at <span className="text-white font-bold">100% Efficiency</span>. 
+               All distributed nodes are synced with the global reactive state.
             </p>
-            <div className="flex flex-wrap gap-4 pt-4">
+            <div className="flex flex-wrap gap-6 pt-4">
                <Link href="/dashboard/workflows/new">
-                  <Button className="h-14 px-10 rounded-2xl bg-primary text-white hover:bg-primary/90 font-black italic tracking-widest shadow-xl shadow-primary/20">
+                  <Button className="h-16 px-10 rounded-[2rem] bg-primary text-white hover:bg-primary/90 font-black italic tracking-widest shadow-2xl shadow-primary/30 border border-white/10 group">
                      INITIALIZE WORKFLOW
+                     <Plus className="ml-2 w-5 h-5 group-hover:rotate-90 transition-transform" />
                   </Button>
                </Link>
-               <Button variant="outline" className="h-14 px-8 rounded-2xl border-white/10 bg-white/5 hover:bg-white/10 font-bold gap-3">
-                  <Zap className="w-5 h-5" />
-                  View Quickstart
+               <Button variant="outline" className="h-16 px-10 rounded-[2rem] border-white/10 bg-white/5 hover:bg-white/10 font-black italic tracking-widest gap-4 backdrop-blur-md">
+                  <Zap className="w-5 h-5 text-primary" />
+                  QUICKSTART_GUIDE
                </Button>
             </div>
          </div>
 
-         {/* Stats overlay */}
-         <div className="hidden lg:flex absolute right-12 top-1/2 -translate-y-1/2 gap-8">
-            <div className="text-center group">
-               <div className="text-5xl font-black text-primary italic tracking-tighter">98.2<span className="text-xs uppercase ml-1">%</span></div>
-               <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mt-2">Uptime</div>
-            </div>
-            <div className="text-center">
-               <div className="text-5xl font-black text-white italic tracking-tighter">12<span className="text-xs uppercase ml-1">ms</span></div>
-               <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mt-2">Latency</div>
-            </div>
+         {/* Real-time Metrics Overlay */}
+         <div className="hidden xl:flex absolute right-16 top-1/2 -translate-y-1/2 gap-12">
+            <MetricBox value="99.9" unit="%" label="Sync_Rate" color="text-primary" />
+            <MetricBox value="12" unit="ms" label="Avg_Latency" color="text-white" />
          </div>
-      </div>
+      </motion.div>
 
-      {/* Getting Started Guide */}
+      {/* Action Grid */}
       <div className="grid md:grid-cols-3 gap-8">
-         <Card className="glass border-none rounded-[2.5rem] shadow-xl hover:shadow-2xl transition-all group overflow-hidden">
-            <CardContent className="p-8 space-y-4">
-               <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-                  <GitBranch className="w-6 h-6" />
-               </div>
-               <div className="space-y-1">
-                  <h3 className="font-black text-lg">Create Logic</h3>
-                  <p className="text-xs text-muted-foreground font-medium leading-relaxed italic">Design your first autonomous flow using our drag-and-drop canvas or SDK.</p>
-               </div>
-               <Button variant="link" className="p-0 h-auto text-primary font-black uppercase text-[10px] tracking-widest items-center">
-                  Get Started <ArrowRight className="ml-2 w-3 h-3" />
-               </Button>
-            </CardContent>
-         </Card>
-
-         <Card className="glass border-none rounded-[2.5rem] shadow-xl hover:shadow-2xl transition-all group overflow-hidden border-b-4 border-primary/20">
-            <CardContent className="p-8 space-y-4">
-               <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-500 group-hover:scale-110 transition-transform">
-                  <Activity className="w-6 h-6" />
-               </div>
-               <div className="space-y-1">
-                  <h3 className="font-black text-lg">Establish Sockets</h3>
-                  <p className="text-xs text-muted-foreground font-medium leading-relaxed italic">Connect your production environment to receive real-time execution streams.</p>
-               </div>
-               <Button variant="link" className="p-0 h-auto text-blue-500 font-black uppercase text-[10px] tracking-widest items-center">
-                  Configure SDK <ArrowRight className="ml-2 w-3 h-3" />
-               </Button>
-            </CardContent>
-         </Card>
-
-         <Card className="glass border-none rounded-[2.5rem] shadow-xl hover:shadow-2xl transition-all group overflow-hidden">
-            <CardContent className="p-8 space-y-4">
-               <div className="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center text-orange-500 group-hover:scale-110 transition-transform">
-                  <CheckCircle2 className="w-6 h-6" />
-               </div>
-               <div className="space-y-1">
-                  <h3 className="font-black text-lg">Scale Globally</h3>
-                  <p className="text-xs text-muted-foreground font-medium leading-relaxed italic">Distribute your workflows across multiple cloud providers with zero latency.</p>
-               </div>
-               <Button variant="link" className="p-0 h-auto text-orange-500 font-black uppercase text-[10px] tracking-widest items-center">
-                  Upgrade Plan <ArrowRight className="ml-2 w-3 h-3" />
-               </Button>
-            </CardContent>
-         </Card>
+         <GuideCard 
+           icon={GitBranch} 
+           title="Cognitive Logic" 
+           desc="Deploy autonomous reasoning chains using our distributed agent protocol."
+           color="primary"
+         />
+         <GuideCard 
+           icon={Activity} 
+           title="Real-time Telemetry" 
+           desc="Monitor every cognitive step and tool interaction in our live execution stream."
+           color="blue"
+         />
+         <GuideCard 
+           icon={ShieldCheck} 
+           title="Secure Sovereignty" 
+           desc="All inferences are encrypted at the edge with zero-retention by default."
+           color="orange"
+         />
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-8">
-         {/* Recent Activity */}
-         <Card className="lg:col-span-2 glass border-none rounded-[2.5rem] shadow-xl overflow-hidden">
-            <CardHeader className="p-10 pb-6 border-b border-white/5">
-               <div className="flex items-center justify-between">
-                  <CardTitle className="text-xl font-black italic">Recent Executions</CardTitle>
-                  <Link href="/dashboard/executions">
-                     <Button variant="ghost" size="sm" className="font-black uppercase text-[10px] tracking-widest text-muted-foreground">View All</Button>
-                  </Link>
+      <div className="grid lg:grid-cols-3 gap-10">
+         {/* Execution Stream */}
+         <Card className="lg:col-span-2 glass border-none rounded-[3rem] shadow-2xl overflow-hidden backdrop-blur-xl">
+            <CardHeader className="p-12 pb-8 border-b border-white/5 flex flex-row items-center justify-between">
+               <div className="space-y-2">
+                  <CardTitle className="text-2xl font-black italic tracking-tight">EXECUTION_STREAM</CardTitle>
+                  <CardDescription className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40">Live Cognitive Events</CardDescription>
                </div>
+               <Link href="/dashboard/executions">
+                  <Button variant="ghost" size="sm" className="font-black uppercase text-[10px] tracking-widest text-primary hover:bg-primary/10">View Log Archive</Button>
+               </Link>
             </CardHeader>
             <CardContent className="p-0">
                <div className="divide-y divide-white/5">
                   {[
-                     { id: 'ex_124', name: 'Lead Extraction Agent', status: 'Success', time: '2m ago', duration: '1.2s' },
-                     { id: 'ex_123', name: 'Slack Summary Cycle', status: 'Success', time: '15m ago', duration: '0.8s' },
-                     { id: 'ex_122', name: 'Zendesk Routing Agent', status: 'In-Progress', time: 'Just now', duration: '-' },
-                     { id: 'ex_121', name: 'Github PR Auditor', status: 'Failed', time: '1h ago', duration: '4.5s' },
+                     { id: 'ex_124', name: 'Neural_Extraction_Agent', status: 'Success', time: '2m ago', duration: '1.2s' },
+                     { id: 'ex_123', name: 'Global_Sync_Cycle', status: 'Success', time: '15m ago', duration: '0.8s' },
+                     { id: 'ex_122', name: 'Bilateral_Reasoning_Loop', status: 'In-Progress', time: 'Just now', duration: '-' },
+                     { id: 'ex_121', name: 'Database_Audit_Bot', status: 'Failed', time: '1h ago', duration: '4.5s' },
                   ].map((ex) => (
-                     <div key={ex.id} className="p-6 px-10 flex items-center justify-between hover:bg-white/2 transition-colors group">
-                        <div className="flex items-center gap-6">
+                     <div key={ex.id} className="p-8 px-12 flex items-center justify-between hover:bg-white/[0.02] transition-all group cursor-pointer">
+                        <div className="flex items-center gap-8">
                            <div className={cn(
-                              "w-10 h-10 rounded-xl flex items-center justify-center",
-                              ex.status === 'Success' ? "bg-green-500/10 text-green-500" :
-                              ex.status === 'In-Progress' ? "bg-primary/10 text-primary animate-pulse" :
-                              "bg-red-500/10 text-red-500"
+                              "w-14 h-14 rounded-2xl flex items-center justify-center border",
+                              ex.status === 'Success' ? "bg-green-500/10 text-green-500 border-green-500/20" :
+                              ex.status === 'In-Progress' ? "bg-primary/10 text-primary border-primary/20 animate-pulse" :
+                              "bg-red-500/10 text-red-500 border-red-500/20"
                            )}>
-                              {ex.status === 'Success' ? <CheckCircle2 className="w-5 h-5" /> :
-                               ex.status === 'In-Progress' ? <Play className="w-5 h-5" /> :
-                               <AlertCircle className="w-5 h-5" />
+                              {ex.status === 'Success' ? <CheckCircle2 className="w-6 h-6" /> :
+                               ex.status === 'In-Progress' ? <Play className="w-6 h-6" /> :
+                               <AlertCircle className="w-6 h-6" />
                               }
                            </div>
                            <div>
-                              <div className="font-bold text-sm tracking-tight group-hover:text-primary transition-colors">{ex.name}</div>
-                              <div className="text-[10px] font-black uppercase tracking-widest opacity-30">{ex.id} • {ex.time}</div>
+                              <div className="font-black text-lg tracking-tight group-hover:text-primary transition-colors italic">{ex.name}</div>
+                              <div className="text-[10px] font-black uppercase tracking-[0.4em] opacity-20">{ex.id} • {ex.time}</div>
                            </div>
                         </div>
-                        <div className="text-right">
-                           <div className="font-mono text-xs font-bold opacity-60">{ex.duration}</div>
+                        <div className="text-right space-y-2">
+                           <div className="font-mono text-xs font-black opacity-40 italic">{ex.duration}</div>
                            <Badge variant="outline" className={cn(
-                              "h-5 text-[8px] font-black border-none px-2",
+                              "h-6 text-[9px] font-black border-none px-4 rounded-full",
                               ex.status === 'Success' ? "bg-green-500/10 text-green-500" :
                               ex.status === 'In-Progress' ? "bg-primary/10 text-primary" :
                               "bg-red-500/10 text-red-500"
@@ -172,40 +160,36 @@ export default function DashboardOverview() {
             </CardContent>
          </Card>
 
-         {/* Usage Pulse */}
-         <Card className="glass border-none rounded-[2.5rem] shadow-xl overflow-hidden">
-             <CardHeader className="p-10">
-                <CardTitle className="text-sm font-black uppercase tracking-[0.2em] opacity-30">Consumption</CardTitle>
+         {/* Quota Pulse */}
+         <Card className="glass border-none rounded-[3rem] shadow-2xl overflow-hidden self-start sticky top-28">
+             <CardHeader className="p-12 pb-6">
+                <CardTitle className="text-sm font-black uppercase tracking-[0.4em] opacity-20">QUOTA_UTILIZATION</CardTitle>
              </CardHeader>
-             <CardContent className="px-10 pb-10 space-y-8">
-                <div className="space-y-4">
+             <CardContent className="px-12 pb-12 space-y-12">
+                <div className="space-y-6">
                    <div className="flex justify-between items-end">
-                      <div className="text-4xl font-black italic tracking-tighter">64.2%</div>
-                      <div className="text-[10px] font-black uppercase opacity-30">Monthly Quota</div>
+                      <div className="text-5xl font-black italic tracking-tighter glow-text">64.2%</div>
+                      <div className="text-[10px] font-black uppercase opacity-20 tracking-widest">Active_Tokens</div>
                    </div>
-                   <div className="h-3 w-full bg-white/5 rounded-full overflow-hidden">
-                      <div className="h-full bg-primary shadow-[0_0_20px_rgba(var(--primary),0.5)] transition-all duration-1000" style={{ width: '64.2%' }} />
+                   <div className="h-4 w-full bg-white/5 rounded-full overflow-hidden p-1">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: '64.2%' }}
+                        transition={{ duration: 1.5, ease: "easeOut" }}
+                        className="h-full bg-primary rounded-full shadow-[0_0_20px_rgba(var(--primary),0.5)]" 
+                      />
                    </div>
                 </div>
 
-                <div className="space-y-6 pt-6 divide-y divide-white/5">
-                   <div className="flex justify-between py-2">
-                      <span className="text-[10px] font-black uppercase opacity-30 tracking-widest">Active Flows</span>
-                      <span className="text-xs font-black italic">14 / 20</span>
-                   </div>
-                   <div className="flex justify-between py-2">
-                      <span className="text-[10px] font-black uppercase opacity-30 tracking-widest">API Calls</span>
-                      <span className="text-xs font-black italic">24,582</span>
-                   </div>
-                   <div className="flex justify-between py-2">
-                      <span className="text-[10px] font-black uppercase opacity-30 tracking-widest">Execution Hours</span>
-                      <span className="text-xs font-black italic">12.4h</span>
-                   </div>
+                <div className="space-y-8 pt-4">
+                   <MetricRow label="Assigned Nodes" value="14 / 20" />
+                   <MetricRow label="Cognitive Ops" value="24,582" />
+                   <MetricRow label="Uptime Hours" value="156.4h" />
                 </div>
 
                 <Link href="/dashboard/billing">
-                  <Button variant="ghost" className="w-full h-12 rounded-2xl border border-white/5 hover:bg-white/5 font-black uppercase text-[10px] tracking-widest">
-                     Manage Subscription
+                  <Button variant="ghost" className="w-full h-16 rounded-[2rem] border border-white/5 hover:bg-white/5 font-black uppercase text-[10px] tracking-widest text-primary">
+                     UPGRADE_INFRASTRUCTURE
                   </Button>
                 </Link>
              </CardContent>
@@ -215,6 +199,46 @@ export default function DashboardOverview() {
   );
 }
 
-function cn(...classes: any[]) {
-  return classes.filter(Boolean).join(" ");
+function MetricBox({ value, unit, label, color }: any) {
+  return (
+    <div className="text-center group">
+       <div className={cn("text-6xl font-black italic tracking-tighter", color)}>
+         {value}<span className="text-sm uppercase ml-1 opacity-40">{unit}</span>
+       </div>
+       <div className="text-[10px] font-black uppercase tracking-[0.5em] text-zinc-600 mt-4">{label}</div>
+    </div>
+  );
+}
+
+function GuideCard({ icon: Icon, title, desc, color }: any) {
+  return (
+     <Card className="glass border-none rounded-[3rem] shadow-xl hover:shadow-primary/5 hover:-translate-y-2 transition-all group overflow-hidden border-b-4 border-transparent hover:border-primary/20">
+        <CardContent className="p-10 space-y-6">
+           <div className={cn(
+             "w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500",
+             color === 'primary' ? "bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white" :
+             color === 'blue' ? "bg-blue-500/10 text-blue-500 group-hover:bg-blue-500 group-hover:text-white" :
+             "bg-orange-500/10 text-orange-500 group-hover:bg-orange-500 group-hover:text-white"
+           )}>
+              <Icon className="w-8 h-8" />
+           </div>
+           <div className="space-y-2">
+              <h3 className="font-black text-xl italic tracking-tight">{title}</h3>
+              <p className="text-xs text-white/30 font-medium leading-relaxed italic group-hover:text-white/50 transition-colors">{desc}</p>
+           </div>
+           <Button variant="link" className="p-0 h-auto text-primary font-black uppercase text-[10px] tracking-[0.3em] items-center hover:tracking-[0.4em] transition-all">
+              INITIALIZE <ArrowRight className="ml-2 w-3 h-3" />
+           </Button>
+        </CardContent>
+     </Card>
+  );
+}
+
+function MetricRow({ label, value }: any) {
+   return (
+      <div className="flex justify-between items-center group">
+         <span className="text-[10px] font-black uppercase opacity-20 tracking-widest group-hover:opacity-40 transition-opacity">{label}</span>
+         <span className="text-xs font-black italic group-hover:text-primary transition-colors">{value}</span>
+      </div>
+   )
 }

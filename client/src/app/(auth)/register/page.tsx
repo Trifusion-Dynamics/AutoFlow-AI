@@ -1,14 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { Zap, ArrowRight, Loader2, Building2, Mail, Lock, User, ShieldCheck } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Zap, ArrowRight, Loader2, Building2, Mail, Lock, User, ShieldCheck, Cpu, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { useAuthStore } from "@/lib/store/authStore";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { ModernBackground } from "@/components/ui/modern-background";
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -23,98 +24,122 @@ export default function RegisterPage() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.password || !formData.orgName) {
-      toast.error("Please fill in all fields");
+      toast.error("INCOMPLETE_DATA", {
+        description: "All fields are required for node provisioning.",
+      });
       return;
     }
 
     try {
       await register(formData);
-      toast.success("Account created successfully! Welcome aboard.");
+      toast.success("NODE_PROVISIONED", {
+        description: "Organization identity established. Welcome to AutoFlow.",
+      });
       router.push("/dashboard");
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Registration failed. Please try again.");
+      // Use the normalized error message from apiClient if available
+      const errorMessage = error.message || "Internal error during registration.";
+      const errorDetail = error.data?.error?.details?.[0]?.message || "";
+      
+      toast.error("PROVISIONING_FAILED", {
+        description: errorDetail || errorMessage,
+      });
     }
   };
 
   return (
-    <div className="flex min-h-screen bg-background">
-      {/* Left: Background Branding */}
-      <div className="hidden lg:flex flex-1 bg-primary relative overflow-hidden flex-col p-12 text-white">
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
-        <Link href="/" className="relative z-10 flex items-center gap-3">
-          <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-xl">
-             <Zap className="text-primary w-7 h-7" />
+    <div className="flex min-h-screen bg-black overflow-hidden relative selection:bg-primary/30">
+      <ModernBackground />
+
+      {/* Left: Branding & Stats */}
+      <div className="hidden lg:flex flex-1 relative overflow-hidden flex-col p-20 text-white z-10">
+        <div className="absolute inset-0 bg-primary/5 blur-[100px] -z-10 animate-pulse-slow" />
+        
+        <Link href="/" className="relative z-10 flex items-center gap-4 group">
+          <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-[0_0_40px_rgba(255,255,255,0.2)] group-hover:rotate-12 transition-all duration-500">
+             <Zap className="text-primary w-8 h-8 fill-current" />
           </div>
-          <span className="text-3xl font-black tracking-tighter">AutoFlow AI</span>
+          <span className="text-4xl font-black tracking-tighter italic glow-text">AutoFlow AI</span>
         </Link>
 
-        <div className="mt-auto relative z-10 space-y-6 max-w-lg">
-          <div className="inline-block p-2 bg-white/10 rounded-lg backdrop-blur-md border border-white/20 text-[10px] font-black uppercase tracking-widest">
-             v1.0 Developer Preview
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="mt-auto relative z-10 space-y-10 max-w-xl"
+        >
+          <div className="inline-block px-5 py-2 bg-primary/10 rounded-full border border-primary/20 backdrop-blur-xl text-[10px] font-black uppercase tracking-[0.3em] text-primary">
+             INFRASTRUCTURE V2.4 READY
           </div>
-          <h2 className="text-5xl font-black leading-tight">Start Building <br /> AI-Native Workflows.</h2>
-          <p className="text-primary-foreground/70 text-lg leading-relaxed">
-            Join 2,000+ developers automating their business logic with our distributed agent engine.
+          <h2 className="text-7xl font-black leading-[0.85] tracking-tighter italic">BUILD <br /> <span className="text-primary">COGNITIVE</span> <br /> NETWORKS.</h2>
+          <p className="text-white/40 text-xl font-medium leading-relaxed">
+            Provision your identity to start building distributed agent loops that orchestrate your entire business logic.
           </p>
-          <div className="pt-8 flex gap-8">
-            <div className="space-y-1">
-              <div className="text-2xl font-black">99.9%</div>
-              <div className="text-[10px] uppercase font-bold opacity-60 italic">Uptime SLA</div>
-            </div>
-            <div className="space-y-1">
-              <div className="text-2xl font-black">&lt;50ms</div>
-              <div className="text-[10px] uppercase font-bold opacity-60 italic">API Latency</div>
-            </div>
-            <div className="space-y-1">
-              <div className="text-2xl font-black">256-bit</div>
-              <div className="text-[10px] uppercase font-bold opacity-60 italic">Encryption</div>
-            </div>
+          
+          <div className="grid grid-cols-3 gap-10 border-t border-white/5 pt-12">
+            {[
+              { val: "99.9%", label: "Uptime" },
+              { val: "<50ms", label: "Latency" },
+              { val: "AES-512", label: "Security" }
+            ].map((stat, i) => (
+              <div key={i} className="space-y-2">
+                <div className="text-2xl font-black italic text-primary">{stat.val}</div>
+                <div className="text-[10px] uppercase font-black tracking-[0.3em] text-white/20">{stat.label}</div>
+              </div>
+            ))}
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* Right: Register Form */}
-      <div className="flex-1 flex flex-col justify-center px-8 md:px-24 py-12">
-        <div className="max-w-md w-full mx-auto space-y-8">
-          <div className="space-y-2">
-            <h1 className="text-4xl font-black tracking-tight">Create Identity</h1>
-            <p className="text-muted-foreground">Setup your organization and personal developer account.</p>
+      <div className="flex-1 flex flex-col justify-center px-8 md:px-24 py-20 z-10 relative">
+        <motion.div 
+          initial={{ opacity: 0, x: 50 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8 }}
+          className="max-w-md w-full mx-auto space-y-12"
+        >
+          <div className="space-y-4">
+            <h1 className="text-5xl font-black tracking-tighter italic leading-tight">CREATE <br/> <span className="text-primary">IDENTITY</span></h1>
+            <p className="text-white/40 font-medium">Setup your developer account and organization entity.</p>
           </div>
 
-          <form onSubmit={handleRegister} className="space-y-5">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Personal Details</label>
-                <div className="relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input 
-                    placeholder="Full Name" 
-                    className="h-14 pl-12 bg-muted/30 border-none rounded-2xl"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input 
-                    type="email" 
-                    placeholder="Work Email" 
-                    className="h-14 pl-12 bg-muted/30 border-none rounded-2xl"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    required
-                  />
+          <form onSubmit={handleRegister} className="space-y-8">
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 ml-2">Personal Identity</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="relative group">
+                    <User className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 group-focus-within:text-primary transition-colors" />
+                    <Input 
+                      placeholder="FULL_NAME" 
+                      className="h-14 pl-12 bg-white/[0.03] border-white/5 rounded-2xl focus:border-primary/50 text-xs font-mono"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="relative group">
+                    <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 group-focus-within:text-primary transition-colors" />
+                    <Input 
+                      type="email" 
+                      placeholder="WORK_EMAIL" 
+                      className="h-14 pl-12 bg-white/[0.03] border-white/5 rounded-2xl focus:border-primary/50 text-xs font-mono"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      required
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Company Entity</label>
-                <div className="relative">
-                  <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <div className="space-y-3">
+                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 ml-2">Organization Entity</label>
+                <div className="relative group">
+                  <Building2 className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 group-focus-within:text-primary transition-colors" />
                   <Input 
-                    placeholder="Organization Name" 
-                    className="h-14 pl-12 bg-muted/30 border-none rounded-2xl"
+                    placeholder="ORG_NAME_OR_SLUG" 
+                    className="h-14 pl-12 bg-white/[0.03] border-white/5 rounded-2xl focus:border-primary/50 text-xs font-mono"
                     value={formData.orgName}
                     onChange={(e) => setFormData({ ...formData, orgName: e.target.value })}
                     required
@@ -122,14 +147,14 @@ export default function RegisterPage() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Credentials</label>
-                <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <div className="space-y-3">
+                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 ml-2">Secure Credentials</label>
+                <div className="relative group">
+                  <Lock className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 group-focus-within:text-primary transition-colors" />
                   <Input 
                     type="password" 
-                    placeholder="Strong Password" 
-                    className="h-14 pl-12 bg-muted/30 border-none rounded-2xl"
+                    placeholder="PRIVATE_ACCESS_KEY" 
+                    className="h-14 pl-12 bg-white/[0.03] border-white/5 rounded-2xl focus:border-primary/50 text-xs font-mono"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     required
@@ -138,31 +163,50 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            <div className="p-4 bg-muted/30 rounded-2xl border border-dashed border-muted flex items-center gap-3">
-              <ShieldCheck className="w-5 h-5 text-primary" />
-              <p className="text-[10px] text-muted-foreground leading-snug">
-                By creating an account, you agree to our 256-bit data encryption policy and Developer Terms of Service.
+            <div className="p-6 bg-primary/5 rounded-[2rem] border border-primary/10 flex items-start gap-5">
+              <ShieldCheck className="w-8 h-8 text-primary shrink-0" />
+              <p className="text-[10px] text-white/30 leading-relaxed font-medium">
+                By provisioning this node, you agree to the <span className="text-primary cursor-pointer hover:underline">Algorithmic Privacy Policy</span> and our <span className="text-primary cursor-pointer hover:underline">Service Level Agreement</span> regarding data residency.
               </p>
             </div>
 
             <Button 
               type="submit" 
-              className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/95 shadow-xl shadow-primary/20 text-md font-black group"
+              className="w-full h-18 rounded-[2rem] bg-primary hover:bg-primary/80 shadow-2xl shadow-primary/20 text-sm font-black italic tracking-[0.2em] group border border-white/10"
               disabled={isLoading}
             >
-              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
-                <>
-                  PROVISION ACCOUNT
-                  <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </>
-              )}
+              <AnimatePresence mode="wait">
+                {isLoading ? (
+                  <motion.div 
+                    key="loading"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex items-center gap-3"
+                  >
+                    <Loader2 className="w-6 h-6 animate-spin text-white" />
+                    <span>PROVISIONING...</span>
+                  </motion.div>
+                ) : (
+                  <motion.div 
+                    key="idle"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex items-center gap-3"
+                  >
+                    <span>INITIALIZE NODE</span>
+                    <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </Button>
           </form>
 
-          <p className="text-center text-sm text-muted-foreground">
-            Already have an active key? <Link href="/login" className="text-primary font-bold hover:underline">Log in</Link>
+          <p className="text-center text-[10px] font-black uppercase tracking-[0.3em] text-white/20">
+            Node already active? <Link href="/login" className="text-primary hover:tracking-[0.4em] transition-all">Establish Link</Link>
           </p>
-        </div>
+        </motion.div>
       </div>
     </div>
   );

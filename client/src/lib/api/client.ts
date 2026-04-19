@@ -34,28 +34,20 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
         localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('auth-storage');
         window.location.href = '/login?expired=true';
       }
     }
 
-    // Network error / Retry logic (Simplified)
-    if (!error.response && originalRequest && !originalRequest._retryCount) {
-      originalRequest._retryCount = 0;
-    }
-
-    if (!error.response && originalRequest && originalRequest._retryCount < 3) {
-      originalRequest._retryCount++;
-      // Exponential backoff
-      const delay = Math.pow(2, originalRequest._retryCount) * 1000;
-      await new Promise(resolve => setTimeout(resolve, delay));
-      return apiClient(originalRequest);
-    }
-
-    // Normalize error message
-    const message = error.response?.data?.message || error.message || 'An unexpected error occurred';
+    // Normalize error message from backend successResponse/errorResponse structure
+    const backendMessage = error.response?.data?.error?.message || error.response?.data?.message;
+    const message = backendMessage || error.message || 'An unexpected error occurred';
+    
     const normalizedError = new Error(message);
     (normalizedError as any).status = error.response?.status;
     (normalizedError as any).data = error.response?.data;
+    (normalizedError as any).code = error.response?.data?.error?.code;
 
     return Promise.reject(normalizedError);
   }
